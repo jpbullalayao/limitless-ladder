@@ -1,5 +1,6 @@
 import { fetchTournaments, fetchTournamentDetails, fetchTournamentStandings, fetchTournamentPairings } from '@/lib/api'
 import LeaderboardTable from '@/components/LeaderboardTable'
+import PlayerSearch from '@/components/PlayerSearch'
 import { calculateElo } from '@/lib/elo'
 import { formatDate } from '@/lib/utils'
 
@@ -80,6 +81,7 @@ const getLeaderboardData = async () => {
 
   return Array.from(playerStats.values())
     .sort((a, b) => b.elo - a.elo)
+    .slice(0, 100) // Only return top 100 players
 }
 
 export default async function LeaderboardPage() {
@@ -88,6 +90,7 @@ export default async function LeaderboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">VGC Leaderboard</h1>
+      <PlayerSearch />
       <LeaderboardTable players={leaderboardData} />
     </div>
   )

@@ -1,15 +1,16 @@
-import { fetchTournaments, fetchTournamentPairings } from '@/lib/api'
+import { fetchTournaments, fetchTournamentPairings, fetchTournamentStandings } from '@/lib/api'
 import { calculateElo } from '@/lib/elo'
 import { formatDate } from '@/lib/utils'
+import PokemonSprite from '@/components/PokemonSprite'
+import { MatchPokemon } from '@/lib/types'
 
-interface PlayerPageProps {
-  params: {
-    username: string
-  }
-}
+// interface PlayerPageProps {
+//   params: {
+//     Promise<{ username: string }>
+//   }
+// }
 
 const getPlayerData = async (username: string) => {
-  // Similar tournament fetching logic as leaderboard
   const startDate = new Date('2024-01-21')
   const tournaments = await fetchTournaments({
     game: 'VGC',
@@ -23,8 +24,12 @@ const getPlayerData = async (username: string) => {
   const recentMatches = []
 
   for (const tournament of tournaments) {
-    const pairings = await fetchTournamentPairings(tournament.id)
+    const [pairings, standings] = await Promise.all([
+      fetchTournamentPairings(tournament.id),
+      fetchTournamentStandings(tournament.id)
+    ])
     
+    const playerStanding = standings.find(s => s.player === username)
     const playerMatches = pairings.filter(
       match => match.player1 === username || match.player2 === username
     )
@@ -32,6 +37,7 @@ const getPlayerData = async (username: string) => {
     for (const match of playerMatches) {
       const isPlayer1 = match.player1 === username
       const opponent = isPlayer1 ? match.player2 : match.player1
+      const opponentStanding = standings.find(s => s.player === opponent)
 
       if (match.winner === username) {
         wins++
@@ -41,13 +47,14 @@ const getPlayerData = async (username: string) => {
         ties++
       }
 
-      // Add to recent matches if within last 10
       if (recentMatches.length < 10) {
         recentMatches.push({
           tournament: tournament.name,
           date: tournament.date,
           opponent,
-          result: match.winner === username ? 'Win' : match.winner === opponent ? 'Loss' : 'Tie'
+          result: match.winner === username ? 'Win' : match.winner === opponent ? 'Loss' : 'Tie',
+          playerTeam: playerStanding?.decklist || [],
+          opponentTeam: opponentStanding?.decklist || []
         })
       }
     }
@@ -63,8 +70,9 @@ const getPlayerData = async (username: string) => {
   }
 }
 
-export default async function PlayerPage({ params }: PlayerPageProps) {
-  const playerData = await getPlayerData(decodeURIComponent(params.username))
+export default async function PlayerPage({ params }: { params: Promise<{ username: string }> }) {
+  const username = (await params).username
+  const playerData = await getPlayerData(decodeURIComponent(username))
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -88,6 +96,8 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tournament</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opponent</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player Team</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opponent Team</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -104,6 +114,20 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {match.result}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex gap-1">
+                      {match.playerTeam.map((pokemon: MatchPokemon, i: number) => (
+                        <PokemonSprite key={i} id={pokemon.id} />
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex gap-1">
+                      {match.opponentTeam.map((pokemon: MatchPokemon, i: number) => (
+                        <PokemonSprite key={i} id={pokemon.id} />
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ))}
