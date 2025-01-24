@@ -1,21 +1,19 @@
 import Image from 'next/image'
 
+import { cn } from "@/lib/utils";
+
 interface PokemonSpriteProps {
   id: string
-  size?: number
+  className?: string
 }
 
-const PokemonSprite = ({ id, size = 40 }: PokemonSpriteProps) => {
+const PokemonSprite = ({ id, className }: PokemonSpriteProps) => {
   return (
-    <div className="relative flex ">
+    <div className={cn("relative flex h-[30px] w-full", className)}>
       <Image
         src={`https://r2.limitlesstcg.net/pokemon/gen9/${id}.png`}
         alt={id}
-        // fill
-        // width={size}
-        width={30}
-        height={30}
-        // height={size}
+        fill
         className="inline-block"
       />
     </div>
