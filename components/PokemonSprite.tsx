@@ -7,13 +7,18 @@ interface PokemonSpriteProps {
 
 const PokemonSprite = ({ id, size = 40 }: PokemonSpriteProps) => {
   return (
-    <Image
-      src={`https://r2.limitlesstcg.net/pokemon/gen9/${id}.png`}
-      alt={id}
-      width={size}
-      height={size}
-      className="inline-block"
-    />
+    <div className="relative flex ">
+      <Image
+        src={`https://r2.limitlesstcg.net/pokemon/gen9/${id}.png`}
+        alt={id}
+        // fill
+        // width={size}
+        width={30}
+        height={30}
+        // height={size}
+        className="inline-block"
+      />
+    </div>
   )
 }
 
