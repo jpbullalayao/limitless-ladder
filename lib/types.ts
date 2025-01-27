@@ -14,6 +14,7 @@ export interface TournamentMatch {
   player1: string
   player2: string
   winner: string | 0
+  round?: number
 }
 
 export interface MatchPokemon {
