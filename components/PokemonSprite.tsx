@@ -13,8 +13,10 @@ const PokemonSprite = ({ id, className }: PokemonSpriteProps) => {
       <Image
         src={`https://r2.limitlesstcg.net/pokemon/gen9/${id}.png`}
         alt={id}
+        // width={30}
+        // height={30}
         fill
-        className="inline-block"
+        className="inline-block h-[30px] w-auto"
       />
     </div>
   )

@@ -108,9 +108,7 @@ const getPlayerData = async (username: string) => {
     wins,
     losses,
     ties,
-    matches: allMatches.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
+    matches: allMatches.reverse()
   }
 }
 
@@ -169,14 +167,14 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                     {match.playerElo}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 w-[200px]">
                       {match.playerTeam.map((pokemon, i) => (
                         <PokemonSprite key={i} id={pokemon.id} />
                       ))}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 w-[200px]">
                       {match.opponentTeam.map((pokemon, i) => (
                         <PokemonSprite key={i} id={pokemon.id} />
                       ))}

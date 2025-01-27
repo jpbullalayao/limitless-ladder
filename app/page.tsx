@@ -90,7 +90,7 @@ export default async function LeaderboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">VGC Ladder</h1>
+        <h1 className="text-3xl font-bold">VGC Leaderboard</h1>
         <div className="w-96">
           <PlayerSearch />
         </div>
