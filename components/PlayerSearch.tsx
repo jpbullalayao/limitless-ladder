@@ -57,7 +57,7 @@ const PlayerSearch = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto mb-8 relative">
+    <div className="relative">
       <form onSubmit={handleSubmit} className="relative">
         <div className="flex gap-2">
           <input
@@ -65,11 +65,11 @@ const PlayerSearch = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search for a player..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900"
             disabled={isLoading}
           >
             {isLoading ? 'Searching...' : 'Search'}

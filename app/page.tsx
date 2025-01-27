@@ -84,13 +84,17 @@ const getLeaderboardData = async () => {
     .slice(0, 100) // Only return top 100 players
 }
 
-export default async function Home() {
+export default async function LeaderboardPage() {
   const leaderboardData = await getLeaderboardData()
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">VGC Ladder</h1>
-      <PlayerSearch />
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">VGC Ladder</h1>
+        <div className="w-96">
+          <PlayerSearch />
+        </div>
+      </div>
       <LeaderboardTable players={leaderboardData} />
     </div>
   )

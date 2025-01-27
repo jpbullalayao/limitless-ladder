@@ -108,7 +108,9 @@ const getPlayerData = async (username: string) => {
     wins,
     losses,
     ties,
-    matches: allMatches
+    matches: allMatches.sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
   }
 }
 
