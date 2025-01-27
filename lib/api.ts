@@ -1,6 +1,8 @@
+import { Tournament, TournamentStanding, TournamentMatch } from './types'
+
 const API_BASE = 'https://play.limitlesstcg.com/api'
 
-export const fetchTournaments = async ({ game, startDate }: { game: string, startDate: string }) => {
+export const fetchTournaments = async ({ game, startDate }: { game: string, startDate: string }): Promise<Tournament[]> => {
   const response = await fetch(`${API_BASE}/tournaments?game=${game}&startDate=${startDate}`, {
     headers: {
       'X-Access-Key': process.env.LIMITLESS_API_KEY!
@@ -9,7 +11,7 @@ export const fetchTournaments = async ({ game, startDate }: { game: string, star
   return response.json()
 }
 
-export const fetchTournamentDetails = async (id: string) => {
+export const fetchTournamentDetails = async (id: string): Promise<Tournament> => {
   const response = await fetch(`${API_BASE}/tournaments/${id}/details`, {
     headers: {
       'X-Access-Key': process.env.LIMITLESS_API_KEY!
@@ -18,7 +20,7 @@ export const fetchTournamentDetails = async (id: string) => {
   return response.json()
 }
 
-export const fetchTournamentStandings = async (id: string) => {
+export const fetchTournamentStandings = async (id: string): Promise<TournamentStanding[]> => {
   const response = await fetch(`${API_BASE}/tournaments/${id}/standings`, {
     headers: {
       'X-Access-Key': process.env.LIMITLESS_API_KEY!
@@ -27,7 +29,7 @@ export const fetchTournamentStandings = async (id: string) => {
   return response.json()
 }
 
-export const fetchTournamentPairings = async (id: string) => {
+export const fetchTournamentPairings = async (id: string): Promise<TournamentMatch[]> => {
   const response = await fetch(`${API_BASE}/tournaments/${id}/pairings`, {
     headers: {
       'X-Access-Key': process.env.LIMITLESS_API_KEY!

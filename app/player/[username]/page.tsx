@@ -4,11 +4,20 @@ import { formatDate } from '@/lib/utils'
 import PokemonSprite from '@/components/PokemonSprite'
 import { MatchPokemon } from '@/lib/types'
 
-// interface PlayerPageProps {
-//   params: {
-//     Promise<{ username: string }>
-//   }
-// }
+interface PlayerPageProps {
+  params: Promise<{
+    username: string
+  }>
+}
+
+interface Match {
+  tournament: string
+  date: string
+  opponent: string
+  result: 'Win' | 'Loss' | 'Tie'
+  playerTeam: MatchPokemon[]
+  opponentTeam: MatchPokemon[]
+}
 
 const getPlayerData = async (username: string) => {
   const startDate = new Date('2024-01-21')
@@ -70,8 +79,8 @@ const getPlayerData = async (username: string) => {
   }
 }
 
-export default async function PlayerPage({ params }: { params: Promise<{ username: string }> }) {
-  const username = (await params).username
+export default async function PlayerPage({ params }: PlayerPageProps) {
+  const { username } = await params;
   const playerData = await getPlayerData(decodeURIComponent(username))
 
   return (

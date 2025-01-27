@@ -1,4 +1,5 @@
 import { fetchTournaments, fetchTournamentStandings } from '@/lib/api'
+import { TournamentStanding } from '@/lib/types'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
   
   for (const tournament of tournaments) {
     const standings = await fetchTournamentStandings(tournament.id)
-    standings.forEach(standing => {
+    standings.forEach((standing: TournamentStanding) => {
       if (standing.player.toLowerCase().includes(query)) {
         uniquePlayers.add(standing.player)
       }
