@@ -13,7 +13,7 @@ interface Player {
 }
 
 const getLeaderboardData = async () => {
-  // Fetch all VGC tournaments since Jan 5, 2024
+  // Fetch all VGC tournaments since Jan 5, 2025
   const startDate = new Date('2025-01-05')
   const tournaments = await fetchTournaments({
     game: 'VGC',
