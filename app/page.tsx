@@ -1,87 +1,45 @@
-import { fetchTournaments, fetchTournamentDetails, fetchTournamentStandings, fetchTournamentPairings } from '@/lib/api'
+import { fetchTournaments, fetchTournamentPairings } from '@/lib/api'
 import LeaderboardTable from '@/components/LeaderboardTable'
 import PlayerSearch from '@/components/PlayerSearch'
-import { calculateElo } from '@/lib/elo'
-import { formatDate } from '@/lib/utils'
-
-interface Player {
-  username: string
-  elo: number
-  wins: number
-  losses: number
-  ties: number
-}
+import { processMatches, calculatePlayerStats, formatElo } from '@/lib/elo-utils'
 
 const getLeaderboardData = async () => {
-  // Fetch all VGC tournaments since Jan 5, 2025
   const startDate = new Date('2025-01-05')
   const tournaments = await fetchTournaments({
     game: 'VGC',
     startDate: startDate.toISOString()
   })
 
-  const playerStats: Map<string, Player> = new Map()
-
-  // Process each tournament
+  // Fetch all pairings
+  const pairingsMap = new Map()
   for (const tournament of tournaments) {
-    const [details, standings, pairings] = await Promise.all([
-      fetchTournamentDetails(tournament.id),
-      fetchTournamentStandings(tournament.id),
-      fetchTournamentPairings(tournament.id)
-    ])
-
-    // Process matches to calculate Elo and record
-    pairings.forEach(match => {
-      if (!match.player1 || !match.player2) return // Skip byes
-
-      // Initialize players if needed
-      if (!playerStats.has(match.player1)) {
-        playerStats.set(match.player1, {
-          username: match.player1,
-          elo: 1000,
-          wins: 0,
-          losses: 0,
-          ties: 0
-        })
-      }
-      if (!playerStats.has(match.player2)) {
-        playerStats.set(match.player2, {
-          username: match.player2,
-          elo: 1000,
-          wins: 0,
-          losses: 0,
-          ties: 0
-        })
-      }
-
-      const player1 = playerStats.get(match.player1)!
-      const player2 = playerStats.get(match.player2)!
-
-      if (match.winner === match.player1) {
-        player1.wins++
-        player2.losses++
-        const [newElo1, newElo2] = calculateElo(player1.elo, player2.elo, 1)
-        player1.elo = newElo1
-        player2.elo = newElo2
-      } else if (match.winner === match.player2) {
-        player2.wins++
-        player1.losses++
-        const [newElo1, newElo2] = calculateElo(player1.elo, player2.elo, 0)
-        player1.elo = newElo1
-        player2.elo = newElo2
-      } else if (match.winner === 0) { // Tie
-        player1.ties++
-        player2.ties++
-        const [newElo1, newElo2] = calculateElo(player1.elo, player2.elo, 0.5)
-        player1.elo = newElo1
-        player2.elo = newElo2
-      }
-    })
+    pairingsMap.set(tournament.id, await fetchTournamentPairings(tournament.id))
   }
 
-  return Array.from(playerStats.values())
+  const processedMatches = processMatches(tournaments, pairingsMap)
+  
+  // Get unique players
+  const players = new Set<string>()
+  processedMatches.forEach(match => {
+    players.add(match.player1)
+    if (match.player2) {  // Only add player2 if it exists (not a BYE)
+      players.add(match.player2)
+    }
+  })
+
+  // Calculate stats for each player
+  const playerStats = Array.from(players)
+    .filter(Boolean)  // Remove any null/undefined values
+    .map(username => 
+      calculatePlayerStats(
+        processedMatches.filter(m => m.player1 === username || m.player2 === username),
+        username
+      )
+    )
+
+  return playerStats
     .sort((a, b) => b.elo - a.elo)
-    .slice(0, 100) // Only return top 100 players
+    .slice(0, 100)
 }
 
 export default async function LeaderboardPage() {

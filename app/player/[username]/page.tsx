@@ -1,8 +1,7 @@
 import { fetchTournaments, fetchTournamentPairings, fetchTournamentStandings } from '@/lib/api'
-import { calculateElo } from '@/lib/elo'
 import { formatDate } from '@/lib/utils'
+import { processMatches, calculatePlayerStats, formatElo } from '@/lib/elo-utils'
 import PokemonSprite from '@/components/PokemonSprite'
-import { MatchPokemon } from '@/lib/types'
 import Link from 'next/link'
 
 interface PlayerPageProps {
@@ -11,105 +10,68 @@ interface PlayerPageProps {
   }>
 }
 
-interface Match {
-  tournament: string
-  date: string
-  opponent: string
-  result: 'Win' | 'Loss' | 'Tie'
-  playerTeam: MatchPokemon[]
-  opponentTeam: MatchPokemon[]
-  playerElo: number
-  opponentElo: number
-}
-
 const getPlayerData = async (username: string) => {
-  // Fetch all VGC tournaments since Jan 5, 2025
   const startDate = new Date('2025-01-05')
   const tournaments = await fetchTournaments({
     game: 'VGC',
     startDate: startDate.toISOString()
   })
 
-  let elo = 1000
-  let wins = 0
-  let losses = 0
-  let ties = 0
-  const allMatches: Match[] = []
+  // Fetch all pairings
+  const pairingsMap = new Map()
+  for (const tournament of tournaments) {
+    pairingsMap.set(tournament.id, await fetchTournamentPairings(tournament.id))
+  }
 
-  // Process tournaments chronologically
-  const sortedTournaments = tournaments.sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
+  const processedMatches = processMatches(tournaments, pairingsMap)
+  const playerMatches = processedMatches.filter(
+    match => match.player1 === username || match.player2 === username
   )
+  const playerStats = calculatePlayerStats(playerMatches, username)
 
-  for (const tournament of sortedTournaments) {
-    const [pairings, standings] = await Promise.all([
-      fetchTournamentPairings(tournament.id),
-      fetchTournamentStandings(tournament.id)
-    ])
-    
-    const playerStanding = standings.find(s => s.player === username)
-    const playerMatches = pairings.filter(
-      match => match.player1 === username || match.player2 === username
-    )
-
-    // Sort matches by round to process them in order
-    const sortedMatches = playerMatches.sort((a, b) => 
-      (a.round || 0) - (b.round || 0)
-    )
-
-    for (const match of sortedMatches) {
-      const isPlayer1 = match.player1 === username
-      const opponent = isPlayer1 ? match.player2 : match.player1
-      const opponentStanding = standings.find(s => s.player === opponent)
-
-      let matchResult: 'Win' | 'Loss' | 'Tie'
-      let score = 0.5 // Default for tie
-
-      if (match.winner === username) {
-        wins++
-        matchResult = 'Win'
-        score = 1
-      } else if (match.winner === opponent) {
-        losses++
-        matchResult = 'Loss'
-        score = 0
-      } else {
-        ties++
-        matchResult = 'Tie'
+  // Get team information for each match
+  const matchesWithTeams = await Promise.all(
+    playerMatches.map(async (match) => {
+      const standings = await fetchTournamentStandings(match.tournament.id)
+      const playerStanding = standings.find(s => s.player === username)
+      
+      // Handle BYE matches
+      if (match.isBye) {
+        return {
+          tournament: match.tournament.name,
+          date: match.tournament.date,
+          opponent: 'BYE',
+          result: 'Win',
+          playerTeam: playerStanding?.decklist || [],
+          opponentTeam: [],
+          playerElo: formatElo(match.player1Elo),
+          opponentElo: '-'
+        }
       }
 
-      // Find opponent's current Elo in our processed matches
-      const opponentPreviousMatches = allMatches.filter(m => 
-        m.opponent === opponent
-      )
-      const opponentElo = opponentPreviousMatches.length > 0
-        ? opponentPreviousMatches[opponentPreviousMatches.length - 1].opponentElo
-        : 1000
+      const opponentName = match.player1 === username ? match.player2! : match.player1
+      const opponentStanding = standings.find(s => s.player === opponentName)
 
-      // Calculate new Elos
-      const [newPlayerElo, newOpponentElo] = calculateElo(elo, opponentElo, score)
-      elo = newPlayerElo
-
-      allMatches.push({
-        tournament: tournament.name,
-        date: tournament.date,
-        opponent,
-        result: matchResult,
+      return {
+        tournament: match.tournament.name,
+        date: match.tournament.date,
+        opponent: opponentName,
+        result: match.winner === username ? 'Win' : match.winner === opponentName ? 'Loss' : 'Tie',
         playerTeam: playerStanding?.decklist || [],
         opponentTeam: opponentStanding?.decklist || [],
-        playerElo: Math.round(newPlayerElo),
-        opponentElo: Math.round(opponentElo)
-      })
-    }
-  }
+        playerElo: formatElo(match.player1 === username ? match.player1Elo : match.player2Elo!),
+        opponentElo: formatElo(match.player1 === username ? match.player2Elo! : match.player1Elo)
+      }
+    })
+  )
 
   return {
     username,
-    elo: Math.round(elo),
-    wins,
-    losses,
-    ties,
-    matches: allMatches.reverse()
+    elo: formatElo(playerStats.elo),
+    wins: playerStats.wins,
+    losses: playerStats.losses,
+    ties: playerStats.ties,
+    matches: matchesWithTeams.reverse() // Most recent first
   }
 }
 
@@ -154,12 +116,16 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                     {match.tournament}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <Link 
-                      href={`/player/${encodeURIComponent(match.opponent)}`}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      {match.opponent}
-                    </Link>
+                    {match.opponent === 'BYE' ? (
+                      match.opponent
+                    ) : (
+                      <Link 
+                        href={`/player/${encodeURIComponent(match.opponent)}`}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        {match.opponent}
+                      </Link>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {match.result}
