@@ -5,9 +5,9 @@ import PokemonSprite from '@/components/PokemonSprite'
 import Link from 'next/link'
 
 interface PlayerPageProps {
-  params: {
+  params: Promise<{
     username: string
-  }
+  }>
 }
 
 const getPlayerData = async (username: string) => {
@@ -76,7 +76,7 @@ const getPlayerData = async (username: string) => {
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
-  const { username } = params
+  const { username } = await params
   const playerData = await getPlayerData(decodeURIComponent(username))
 
   return (

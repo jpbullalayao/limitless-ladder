@@ -1,4 +1,4 @@
-import { Tournament, TournamentStanding, TournamentMatch } from './types'
+import type { Tournament, TournamentMatch, TournamentStanding } from './types'
 
 const API_BASE = 'https://play.limitlesstcg.com/api'
 

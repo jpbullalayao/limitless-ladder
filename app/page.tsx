@@ -22,16 +22,20 @@ const getLeaderboardData = async () => {
   const players = new Set<string>()
   processedMatches.forEach(match => {
     players.add(match.player1)
-    players.add(match.player2)
+    if (match.player2) {  // Only add player2 if it exists (not a BYE)
+      players.add(match.player2)
+    }
   })
 
   // Calculate stats for each player
-  const playerStats = Array.from(players).map(username => 
-    calculatePlayerStats(
-      processedMatches.filter(m => m.player1 === username || m.player2 === username),
-      username
+  const playerStats = Array.from(players)
+    .filter(Boolean)  // Remove any null/undefined values
+    .map(username => 
+      calculatePlayerStats(
+        processedMatches.filter(m => m.player1 === username || m.player2 === username),
+        username
+      )
     )
-  )
 
   return playerStats
     .sort((a, b) => b.elo - a.elo)
